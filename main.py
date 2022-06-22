@@ -1,3 +1,4 @@
+from turtle import title
 from typing import Union
 from pydantic import BaseModel
 from db import *
@@ -35,8 +36,62 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=400,detail="Inactive user")
     return user
 
+@app.get("/")
+async def index():
+    return {"Hello":"World"}
+
+@app.get("/papers/")
+async def read_papers(current_user: User = Depends(get_current_user)):
+    if current_user.read or current_user.adm:
+        data = []
+        for paper in s.query(Paper):
+            data.append(paper)
+        return data
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
+    
+
+@app.get("/papers/{paper_id}")
+async def read_paper(paper_id:int,current_user: User = Depends(get_current_user)):
+    if current_user.read or current_user.adm:
+        paper = s.get(Paper,paper_id)
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return paper
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
+
+@app.post("/papers/write")
+async def read_papers(paper_draft: PaperCreate,current_user: User = Depends(get_current_user)):
+    if current_user.write or current_user.adm:
+        paper = Paper(title=paper_draft.title,content = paper_draft.content,status = 0,users = [current_user.id])
+        s.add(paper)
+        s.commit()
+        return {"status":"ok"}
+    else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+
+@app.patch("/papers/{paper_id}")
+async def read_papers(paper_id: int,paper_update: PaperUpdate,current_user: User = Depends(get_current_user)):
+    if current_user.write or current_user.adm:
+        data = paper_update
+        paper = s.get(Paper,paper_id)
+        if current_user.id not in paper.users:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        if paper and paper.status == 0 and (current_user.id in paper.users or current_user.adm):
+            if paper_update.title:
+                paper.title =  paper_update.title
+            if paper_update.content:
+                paper.content = paper_update.content
+            s.commit()
+        return {"status":"updated","detail":paper}
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+            
 @app.post("/register")
-def user_registration(user: UserRegister):
+async def user_registration(user: UserRegister):
     user_info = user.dict()
     user_info['password'] = get_hashed_password(user_info['password'])
     if not get_user(user_info["username"],s):       
@@ -46,7 +101,7 @@ def user_registration(user: UserRegister):
         raise HTTPException(status_code=400,detail="Username Taken")
 
 @app.post("/login")
-def  login_for_acces_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_acces_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(session = s, password = form_data.password, username = form_data.username)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,10 +112,70 @@ def  login_for_acces_token(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token":access_token,"token_type":"bearer"}
 
 @app.get("/users/me/")
-def read_me(current_user: User = Depends(get_current_user)):
-    return current_user.username
+async def read_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
-@app.get("/")
-def index():
-    return {"Hello":"World"}
+@app.get("/make.me.admin/")
+async def make_me_admin(current_user: User = Depends(get_current_user)):
+    s.get(User,current_user.id).adm = True
+    s.commit()
+    return {"status":"ok"}
+
+@app.patch("/adm/paper/{paper_id}")
+async def update_papers(paper_id: int,paper_update: PaperUpdate,current_user: User = Depends(get_current_user)):
+    if current_user.adm:
+        data = paper_update
+        paper = s.get(Paper,paper_id)
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
+        if paper and paper.status == 0 and (current_user.id in paper.users or current_user.adm):
+            if paper_update.title:
+                paper.title =  paper_update.title
+            if paper_update.content:
+                paper.content = paper_update.content
+            if paper_update.status:
+                paper.status = paper_update.status
+            if paper_update.added_users:
+                paper.users = paper.users + paper_update.added_users
+            s.commit()
+        return {"status":"updated"}
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+        
+@app.patch("/adm/user/{user_id}")
+async def update_papers(user_id: int,user_update: UserUpdate,current_user: User = Depends(get_current_user)):
+    if current_user.adm:
+        data = user_update
+        user = s.get(User,user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
+        
+        if data.active != None:
+            user.active = data.active
+        if data.read != None:
+            user.read = data.read
+        if data.write != None:
+            user.write = data.write
+        if data.mod != None:
+            user.mod = data.mod
+        if data.adm != None:
+            user.adm = data.adm
+        s.commit()
+        return {"status":"updated"}
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+
+@app.get("/adm/users/")
+async def update_papers(current_user: User = Depends(get_current_user)):
+    if current_user.adm:
+        data = []
+        for user in s.query(User):
+            data.append(user)
+        return data
+
+        
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+
+
+
+
+
 
