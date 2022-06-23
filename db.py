@@ -1,11 +1,9 @@
 from email.policy import default
-from turtle import end_fill
-import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Boolean, Column,Integer,String,Date,create_engine,ARRAY
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Boolean, Column, Date, ForeignKey,Integer,String,create_engine,ARRAY
+from sqlalchemy.orm import sessionmaker,relationship
 
-DATABASE_URI = "postgresql://postgres:postgres@localhost:5432/postgres"
+DATABASE_URI = "postgresql://postgres:postgres@db:5432/postgres"
 
 Base = declarative_base()
 
@@ -26,9 +24,26 @@ class Paper(Base):
     title = Column(String)
     content = Column(String)
     status = Column(Integer)#0-draft 1-validate 2-denied 3-accepted
-    users = Column(ARRAY(Integer))
+    users = Column(ARRAY(Integer), default = [])
     modComment = Column(String,default = "")
+    rates = Column(ARRAY(Integer), default = [])
+    views = Column(Integer,default = 0)
+    datePublushed = Column(Date,nullable = True)
+    theme = Column(String, default = "general")    
 
+class Comment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer,primary_key=True)
+    content = Column(String)
+    paper_id = Column(Integer,ForeignKey(Paper.id))
+    user_id = Column(Integer,ForeignKey(User.id))
+    
+class Rating(Base):
+    __tablename__ = "ratings"
+    id = Column(Integer,primary_key=True)
+    value = Column(Integer)
+    user_id = Column(Integer,ForeignKey(User.id))
+    paper_id = Column(Integer,ForeignKey(Paper.id))
 
 def setup():
     engine = create_engine(DATABASE_URI)
@@ -47,3 +62,11 @@ def create_user(username,hashed_password,session):
     
 def get_user(username: str,session):
     return session.query(User).filter(User.username == username).first()
+
+def get_rating(session,id):
+        rate = 0
+        num = 0
+        for note in session.query(Rating).filter(Rating.paper_id == id):
+            rate += note.value
+            num += 1
+        return rate / num

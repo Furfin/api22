@@ -1,4 +1,3 @@
-from base64 import encode
 from datetime import datetime, timedelta
 from typing import Union
 from passlib.context import CryptContext
