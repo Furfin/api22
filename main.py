@@ -1,3 +1,4 @@
+from curses.ascii import HT
 from turtle import title
 from typing import Union
 from pydantic import BaseModel
@@ -62,7 +63,7 @@ async def read_paper(paper_id:int,current_user: User = Depends(get_current_user)
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
 
 @app.post("/papers/write")
-async def read_papers(paper_draft: PaperCreate,current_user: User = Depends(get_current_user)):
+async def create_paper(paper_draft: PaperCreate,current_user: User = Depends(get_current_user)):
     if current_user.write or current_user.adm:
         paper = Paper(title=paper_draft.title,content = paper_draft.content,status = 0,users = [current_user.id])
         s.add(paper)
@@ -70,26 +71,7 @@ async def read_papers(paper_draft: PaperCreate,current_user: User = Depends(get_
         return {"status":"ok"}
     else:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
-
-@app.patch("/papers/{paper_id}")
-async def read_papers(paper_id: int,paper_update: PaperUpdate,current_user: User = Depends(get_current_user)):
-    if current_user.write or current_user.adm:
-        data = paper_update
-        paper = s.get(Paper,paper_id)
-        if current_user.id not in paper.users:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
-        if not paper:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        if paper and paper.status == 0 and (current_user.id in paper.users or current_user.adm):
-            if paper_update.title:
-                paper.title =  paper_update.title
-            if paper_update.content:
-                paper.content = paper_update.content
-            s.commit()
-        return {"status":"updated","detail":paper}
-
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
-            
+          
 @app.post("/register")
 async def user_registration(user: UserRegister):
     user_info = user.dict()
@@ -104,22 +86,17 @@ async def user_registration(user: UserRegister):
 async def login_for_acces_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(session = s, password = form_data.password, username = form_data.username)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                      detail="Incorrect username or password",
-                      headers={"WWW-Authenticate":"Bearer"})
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect username or password",headers={"WWW-Authenticate":"Bearer"})
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub":user.username},expires_delta=access_token_expires,secret_key=SECRET_KEY,algo=ALGORITHM)
     return {"access_token":access_token,"token_type":"bearer"}
-
-@app.get("/users/me/")
-async def read_me(current_user: User = Depends(get_current_user)):
-    return current_user
 
 @app.get("/make.me.admin/")
 async def make_me_admin(current_user: User = Depends(get_current_user)):
     s.get(User,current_user.id).adm = True
     s.commit()
     return {"status":"ok"}
+
 
 @app.patch("/adm/paper/{paper_id}")
 async def update_papers(paper_id: int,paper_update: PaperUpdate,current_user: User = Depends(get_current_user)):
@@ -142,12 +119,12 @@ async def update_papers(paper_id: int,paper_update: PaperUpdate,current_user: Us
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
         
 @app.patch("/adm/user/{user_id}")
-async def update_papers(user_id: int,user_update: UserUpdate,current_user: User = Depends(get_current_user)):
+async def update_users(user_id: int,user_update: UserUpdate,current_user: User = Depends(get_current_user)):
     if current_user.adm:
         data = user_update
         user = s.get(User,user_id)
         if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="user not found")
         
         if data.active != None:
             user.active = data.active
@@ -164,16 +141,120 @@ async def update_papers(user_id: int,user_update: UserUpdate,current_user: User 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
 
 @app.get("/adm/users/")
-async def update_papers(current_user: User = Depends(get_current_user)):
+async def read_users(current_user: User = Depends(get_current_user)):
     if current_user.adm:
         data = []
         for user in s.query(User):
             data.append(user)
-        return data
-
-        
+        return data  
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
 
+
+@app.get("/mod/papers/")
+async def read_not_accepted_papers(current_user: User = Depends(get_current_user)):
+    if current_user.adm or current_user.mod:
+        data = []
+        for paper in s.query(Paper).filter(Paper.status == 1):
+            data.append(paper)
+        return data  
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+
+@app.get("/mod/papers/{paper_id}")
+async def accept_paper(paper_id:int,accepted:bool = True,comment:str = "",current_user: User = Depends(get_current_user)):
+    if current_user.adm or current_user.mod:
+        paper = s.get(Paper,paper_id)
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
+        if paper and paper.status == 1 and accepted:
+            paper.status = 3
+            s.commit()
+            return {"status":"accepted"}
+        elif not accepted and paper and paper.status == 1:
+            if not comment:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="denial comment req")
+            paper.status = 2
+            paper.modComment = comment
+            s.commit()
+            return {"status":"denied"}
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="paper still in draft")
+
+
+@app.get("/users/me/")
+async def read_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@app.get("/users/papers/")
+async def read_my_papers(current_user: User = Depends(get_current_user)):
+    if current_user.adm or current_user.read:
+        data = []
+        for paper in s.query(Paper):
+            if current_user.id in paper.users:
+                data.append(paper)
+        return data  
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+
+@app.get("/users/papers/{paper_id}/validate")
+async def to_mod_paper(paper_id:int,current_user: User = Depends(get_current_user)):
+    if current_user.adm or current_user.write:
+        paper = s.get(Paper,paper_id)
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
+        if current_user.id not in paper.users:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+        if paper and paper.status == 0:
+            paper.status = 1
+            s.commit()
+            return {"status":"waiting validation"}
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="paper still in draft")
+
+@app.get("/users/papers/{paper_id}/to_draft")
+async def to_draft_paper(paper_id:int,current_user: User = Depends(get_current_user)):
+    if current_user.adm or current_user.write:
+        paper = s.get(Paper,paper_id)
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
+        if current_user.id not in paper.users:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+        if paper and paper.status != 0:
+            paper.status = 0
+            paper.modComment = ""
+            s.commit()
+            return {"status":"drafting"}
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="paper still in draft")
+
+
+@app.get("/users/papers/{paper_id}")
+async def read_my_paper(paper_id:int,current_user: User = Depends(get_current_user)):
+    if current_user.read or current_user.adm:
+        paper = s.get(Paper,paper_id)
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return paper
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
+
+@app.patch("/users/papers/{paper_id}")
+async def update_paper_draft(paper_id: int,paper_update: PaperUpdate,current_user: User = Depends(get_current_user)):
+    if current_user.write or current_user.adm:
+        data = paper_update
+        paper = s.get(Paper,paper_id)
+        if current_user.id not in paper.users:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+        if not paper:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        if paper and paper.status == 0 and (current_user.id in paper.users or current_user.adm):
+            if paper_update.title:
+                paper.title =  paper_update.title
+            if paper_update.content:
+                paper.content = paper_update.content
+            s.commit()
+        return {"status":"updated","detail":paper}
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
+  
 
 
 

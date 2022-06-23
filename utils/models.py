@@ -20,7 +20,6 @@ class PaperCreate(BaseModel):
 class PaperUpdate(BaseModel):
     title: Union[str,None] = None
     content: Union[str,None] = None
-    status: Union[int,None] = None
     added_users: List[int] = None
 
 class UserUpdate(BaseModel):
@@ -29,3 +28,4 @@ class UserUpdate(BaseModel):
     write: Union[bool,None] = None
     mod: Union[bool,None] = None
     adm: Union[bool,None] = None
+    

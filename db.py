@@ -27,6 +27,7 @@ class Paper(Base):
     content = Column(String)
     status = Column(Integer)#0-draft 1-validate 2-denied 3-accepted
     users = Column(ARRAY(Integer))
+    modComment = Column(String,default = "")
 
 
 def setup():
