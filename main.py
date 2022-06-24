@@ -1,3 +1,6 @@
+from curses.ascii import US
+
+from sqlalchemy import null
 from db import *
 from utils.models import *
 from utils.auth import *
@@ -15,6 +18,11 @@ s = Session()
 #print(s.query(User).first().username)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def check_if_less_than_seven_days(x):
+    d = datetime.strptime(str(x), "%Y-%m-%d")
+    now = datetime.now()                 
+    return (d - now).days < 7
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     exception = HTTPException(status_code=401,detail="Could not validate credetials",headers={"WWW-Authenticate":"Bearer"})
@@ -38,7 +46,7 @@ async def index():
     return {"Hello":"World"}
 
 @app.get("/papers/")
-async def read_papers(current_user: User = Depends(get_current_user),sortby:str = ''):
+async def read_papers(current_user: User = Depends(get_current_user),sortby: str = '',author: str = '',words: str = '',theme: str = '',digestit:bool = True):
     if current_user.read or current_user.adm:
         data = []
         for paper in s.query(Paper):
@@ -49,15 +57,53 @@ async def read_papers(current_user: User = Depends(get_current_user),sortby:str 
                 line = [paper,paper.views]
             if sortby == "title":
                 line = [paper,paper.title]
-            data.append(line)
+            if sortby == "content":
+                line = paper
+            if sortby == "words":
+                if words == '':
+                    raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY,detail="Specify the words to sort by it")
+                elif words in paper.content:
+                    line = [paper]
+                else:
+                    line = []
+            if sortby == "author":
+                user = s.query(User).filter(User.username == author).first()
+                if not user:
+                    raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY,detail="Specify the author that exist to sort by it")
+                elif user.id in paper.users:
+                    line = [paper]
+                else:
+                    line = []
+            if sortby == "date":
+                if paper.datePublushed != None:
+                    line = paper
+                else:
+                    line = []
+            if sortby == "theme":
+                if theme == '' or theme != paper.theme:
+                    line = []
+                else:
+                    line = [paper] 
+            if line != []: 
+                data.append(line)
         if sortby in ["rate","views"]:
             data = sorted(data,key = lambda data: data[1])[::-1]
         if sortby in ["title"]:
             data = sorted(data,key = lambda data: data[1])
+        if sortby in ["content"]:
+            data = sorted(data,key = lambda paper: paper[0].content)
+        if sortby in ["date"]:
+            data = sorted(data,key = lambda paper: paper[0].datePublushed)
+        digest = []
+        if digestit:
+            for paper in data:
+                if paper[0].status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
+                    digest.append(paper)
+            data = digest
         return data
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
-    
+            
 @app.get("/papers/{paper_id}")
 async def read_paper(paper_id:int,current_user: User = Depends(get_current_user)):
     if current_user.read or current_user.adm:
@@ -212,7 +258,7 @@ async def accept_paper(paper_id:int,accepted:bool = True,comment:str = "",curren
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
         if paper and paper.status == 1 and accepted:
             paper.status = 3
-            paper.datePublished = datetime.now()
+            paper.datePublushed = datetime.now()
             s.commit()
             return {"status":"accepted"}
         elif not accepted and paper and paper.status == 1:
