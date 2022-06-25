@@ -1,9 +1,8 @@
-from email.policy import default
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Boolean, Column, Date, ForeignKey,Integer,String,create_engine,ARRAY
-from sqlalchemy.orm import sessionmaker,relationship
+from sqlalchemy.orm import sessionmaker
 
-DATABASE_URI = "postgresql://postgres:postgres@db:5432/postgres"
+DATABASE_URI = "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
 
 Base = declarative_base()
 

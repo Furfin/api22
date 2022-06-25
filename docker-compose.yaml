@@ -12,27 +12,5 @@ services:
     - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql12/data
-  api:
-      container_name: api
-      image: pythonapp
-      build: .
-      command: uvicorn main:app --host 0.0.0.0
-      expose:
-        - 8000
-      ports:
-        - "8000:8000"
-      labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fastapi.rule=Host(`fastapi.localhost`)"
-      depends_on:
-        - db
-  traefik:
-    image: traefik:v2.2
-    ports:
-      - 8008:80
-      - 8081:8080
-    volumes:
-      - "./traefik.dev.toml:/etc/traefik/traefik.toml"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
 volumes:
   pgdata: {}
