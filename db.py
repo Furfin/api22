@@ -3,7 +3,7 @@ from sqlalchemy import Boolean, Column, Date, ForeignKey,Integer,String,create_e
 from sqlalchemy.orm import sessionmaker
 import os
 
-
+print(os.environ['DATABASE_URL'])
 DATABASE_URI = os.environ['DATABASE_URL']
 
 Base = declarative_base()
