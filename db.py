@@ -1,8 +1,10 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Boolean, Column, Date, ForeignKey,Integer,String,create_engine,ARRAY
 from sqlalchemy.orm import sessionmaker
+import os
 
-DATABASE_URI = "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
+
+DATABASE_URI = os.environ['DATABASE_URL']
 
 Base = declarative_base()
 
