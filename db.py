@@ -5,7 +5,7 @@ import os
 
 print(os.environ['DATABASE_URL'])
 DATABASE_URI = os.environ['DATABASE_URL']
-
+DATABASE_URI = DATABASE_URI.replace("postgres://", "postgresql://", 1)
 Base = declarative_base()
 
 class User(Base):
