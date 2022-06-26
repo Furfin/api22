@@ -1,4 +1,4 @@
-from typing import Union,List
+from typing import Union,List,Optional
 from pydantic import BaseModel
 from sqlalchemy import Integer
 

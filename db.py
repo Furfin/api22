@@ -1,10 +1,11 @@
-from email.policy import default
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Boolean, Column, Date, ForeignKey,Integer,String,create_engine,ARRAY
-from sqlalchemy.orm import sessionmaker,relationship
+from sqlalchemy.orm import sessionmaker
+import os
 
-DATABASE_URI = "postgresql://postgres:postgres@db:5432/postgres"
-
+print(os.environ['DATABASE_URL'])
+DATABASE_URI = os.environ['DATABASE_URL']
+DATABASE_URI = DATABASE_URI.replace("postgres://", "postgresql://", 1)
 Base = declarative_base()
 
 class User(Base):
