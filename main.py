@@ -1,4 +1,5 @@
 from curses.ascii import US
+from urllib import request, response
 
 from sqlalchemy import null
 from db import *
@@ -7,6 +8,7 @@ from utils.auth import *
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from starlette.responses import RedirectResponse
 
 SECRET_KEY = "7547b88b5922e3a3a99776b895d73f76b1a9fb1e57a500ae40160094953bf815"
 ALGORITHM = "HS256"
@@ -44,6 +46,31 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 @app.get("/")
 async def index():
     return {"Hello":"World"}
+
+@app.get("/yauth")
+async def auth_with_yandex():
+    url='https://oauth.yandex.ru/authorize?response_type=token&client_id=3525df3335254c57a6df4e48c670809b'
+    
+    return {"authurl":url}
+
+@app.get("/yoauth")
+def proceed_urk_token(acces_token:str = ""):
+    
+    if acces_token:
+        url = 'https://login.yandex.ru/info?'
+        header = {'Authorization': f'OAuth {acces_token}'}
+        data = request.get(url,headers = header).json()
+        username = data["login"]
+        user = s.query(User).filter(User.username == username).first()
+        if not user:
+            body = {"username":username,"password":data["id"]}
+            data = request.post(app.url_path_for('user_registration'),body = body).json()
+            return data
+            
+            
+        
+        
+        
 
 @app.get("/papers/")
 async def read_papers(current_user: User = Depends(get_current_user),sortby: str = '',author: str = '',words: str = '',theme: str = '',digestit:bool = True):
