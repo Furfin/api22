@@ -56,7 +56,8 @@ async def auth_with_yandex():
 @app.get("/yoauth")
 def proceed_url_token(request: Request):
     acces_token = request.url._url.replace('https://apapers.herokuapp.com/yoauth#access_token=','').replace('&token_type=bearer&expires_in=31531335','')
-    if acces_token:
+    print(acces_token)
+    if acces_token != '':
         url = 'https://login.yandex.ru/info?'
         header = {'Authorization': f'OAuth {acces_token}'}
         data = requests.get(url,headers = header).json()
