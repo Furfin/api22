@@ -62,8 +62,8 @@ def proceed_urk_token(acces_token:str = ""):
         username = data["login"]
         user = s.query(User).filter(User.username == username).first()
         if not user:
-            body = {"username":username,"password":data["id"]}
-            data = request.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),data = body).json()
+            body = {"username":username,"password":str(data["id"])}
+            data = request.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),json = body.json()).json()
             return data
             
             
