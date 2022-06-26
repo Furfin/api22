@@ -65,7 +65,7 @@ def proceed_urk_token(acces_token:str = ""):
             data = request.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),json = {"username":username,"password":str(data["id"])}).json()
             return data
         else:
-            data = request.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),json = {"username":username,"password":str(data["id"])}).json()
+            data = request.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),data = {"username":username,"password":str(data["id"])}).json()
             return data
 
             
