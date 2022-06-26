@@ -1,6 +1,5 @@
 from curses.ascii import US
-from urllib import request, response
-
+import requests as request
 from sqlalchemy import null
 from db import *
 from utils.models import *
