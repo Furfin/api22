@@ -1,4 +1,5 @@
 from curses.ascii import US
+from os import access
 import requests as request
 from sqlalchemy import null
 from db import *
@@ -53,8 +54,8 @@ async def auth_with_yandex():
     return {"authurl":url}
 
 @app.get("/yoauth")
-def proceed_urk_token(acces_token:str = ""):
-    
+def proceed_urk_token(param1: Optional[str] = None):
+    acces_token = param1
     if acces_token:
         url = 'https://login.yandex.ru/info?'
         header = {'Authorization': f'OAuth {acces_token}'}
