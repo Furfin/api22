@@ -6,7 +6,7 @@ from db import *
 from utils.models import *
 from utils.auth import *
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from starlette.responses import RedirectResponse
 
@@ -54,8 +54,8 @@ async def auth_with_yandex():
     return {"authurl":url}
 
 @app.get("/yoauth")
-def proceed_urk_token(param1: Optional[str] = None):
-    acces_token = param1
+def proceed_urk_token(request: Request):
+    acces_token = request.url._url.replace('https://apapers.herokuapp.com/yoauth#access_token=','').replace('&token_type=bearer&expires_in=31531335','')
     if acces_token:
         url = 'https://login.yandex.ru/info?'
         header = {'Authorization': f'OAuth {acces_token}'}
