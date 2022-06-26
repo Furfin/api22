@@ -1,6 +1,6 @@
 from curses.ascii import US
 from os import access
-import requests as request
+import requests as requests
 from sqlalchemy import null
 from db import *
 from utils.models import *
@@ -54,19 +54,19 @@ async def auth_with_yandex():
     return {"authurl":url}
 
 @app.get("/yoauth")
-def proceed_urk_token(request: Request):
+def proceed_url_token(request: Request):
     acces_token = request.url._url.replace('https://apapers.herokuapp.com/yoauth#access_token=','').replace('&token_type=bearer&expires_in=31531335','')
     if acces_token:
         url = 'https://login.yandex.ru/info?'
         header = {'Authorization': f'OAuth {acces_token}'}
-        data = request.get(url,headers = header).json()
+        data = requests.get(url,headers = header).json()
         username = data["login"]
         user = s.query(User).filter(User.username == username).first()
         if not user:
-            data = request.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),json = {"username":username,"password":str(data["id"])}).json()
+            data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),json = {"username":username,"password":str(data["id"])}).json()
             return data
         else:
-            data = request.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),data = {"username":username,"password":str(data["id"])}).json()
+            data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),data = {"username":username,"password":str(data["id"])}).json()
             return data
 
             
