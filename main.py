@@ -57,6 +57,7 @@ async def auth_with_yandex():
 def proceed_url_token(request: Request):
     acces_token = request.url._url
     print(acces_token)
+    raise HTTPException(status_code=0)
     if acces_token != '':
         url = 'https://login.yandex.ru/info?'
         header = {'Authorization': f'OAuth {acces_token}'}
