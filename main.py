@@ -68,12 +68,6 @@ def proceed_url_token(request: Request,acces_token: str  = ""):
             data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),data = {"username":username,"password":str(data["id"])}).json()
             return data
 
-            
-            
-        
-        
-        
-
 @app.get("/papers/")
 async def read_papers(current_user: User = Depends(get_current_user),sortby: str = '',author: str = '',words: str = '',theme: str = '',digestit:bool = True):
     if current_user.read or current_user.adm:
@@ -354,7 +348,6 @@ async def read_my_paper(paper_id:int,current_user: User = Depends(get_current_us
         if not paper:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return paper
-
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
 
 @app.patch("/users/papers/{paper_id}")
@@ -374,8 +367,7 @@ async def update_paper_draft(paper_id: int,paper_update: PaperUpdate,current_use
             if paper_update.theme:
                 paper.theme = paper_update.theme
             s.commit()
-        return {"status":"updated","detail":paper}
-
+            return {"status":"updated","detail":paper}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
   
 
