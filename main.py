@@ -366,8 +366,10 @@ async def update_paper_draft(paper_id: int,paper_update: PaperUpdate,current_use
                 paper.content = paper_update.content
             if paper_update.theme:
                 paper.theme = paper_update.theme
+            if paper_update.added_users:
+                paper.users = paper.users + paper_update.added_users
             s.commit()
-            return {"status":"updated","detail":paper}
+        return {"status":"updated","detail":paper}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
   
 
