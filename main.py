@@ -220,7 +220,7 @@ async def update_papers(paper_id: int,paper_update: PaperUpdate,current_user: Us
         paper = s.get(Paper,paper_id)
         if not paper:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
-        if paper and paper.status == 0 and (current_user.id in paper.users or current_user.adm):
+        if paper:
             if paper_update.title:
                 paper.title =  paper_update.title
             if paper_update.content:
@@ -369,7 +369,7 @@ async def update_paper_draft(paper_id: int,paper_update: PaperUpdate,current_use
             if paper_update.added_users:
                 paper.users = paper.users + paper_update.added_users
             s.commit()
-        return {"status":"updated","detail":paper}
+            return {"status":"updated","detail":paper}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
   
 
