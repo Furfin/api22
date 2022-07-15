@@ -114,9 +114,9 @@ async def read_papers(current_user: User = Depends(get_current_user),sortby: str
         if sortby in ["title"]:
             data = sorted(data,key = lambda data: data[1])
         if sortby in ["content"]:
-            data = sorted(data,key = lambda paper: paper[0].content)
+            data = sorted(data,key = lambda paper: paper.content)
         if sortby in ["date"]:
-            data = sorted(data,key = lambda paper: paper[0].datePublushed)
+            data = sorted(data,key = lambda paper: paper.datePublushed)
         digest = []
         if digestit:
             for paper in data:
