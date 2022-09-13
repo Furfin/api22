@@ -238,7 +238,9 @@ async def update_users(user_id: int,user_update: UserUpdate,current_user: User =
         user = s.get(User,user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="user not found")
-        user.active = data.active
+        
+        if data.active != None:
+            user.active = data.active
         if data.read != None:
             user.read = data.read
         if data.write != None:
