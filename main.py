@@ -1,7 +1,4 @@
-from curses.ascii import US
-from os import access
 import requests as requests
-from sqlalchemy import null
 from db import *
 from utils.models import *
 from utils.auth import *
@@ -68,12 +65,6 @@ def proceed_url_token(request: Request,acces_token: str  = ""):
             data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),data = {"username":username,"password":str(data["id"])}).json()
             return data
 
-            
-            
-        
-        
-        
-
 @app.get("/papers/")
 async def read_papers(current_user: User = Depends(get_current_user),sortby: str = '',author: str = '',words: str = '',theme: str = '',digestit:bool = True):
     if current_user.read or current_user.adm:
@@ -120,9 +111,9 @@ async def read_papers(current_user: User = Depends(get_current_user),sortby: str
         if sortby in ["title"]:
             data = sorted(data,key = lambda data: data[1])
         if sortby in ["content"]:
-            data = sorted(data,key = lambda paper: paper[0].content)
+            data = sorted(data,key = lambda paper: paper.content)
         if sortby in ["date"]:
-            data = sorted(data,key = lambda paper: paper[0].datePublushed)
+            data = sorted(data,key = lambda paper: paper.datePublushed)
         digest = []
         if digestit:
             for paper in data:
@@ -226,7 +217,7 @@ async def update_papers(paper_id: int,paper_update: PaperUpdate,current_user: Us
         paper = s.get(Paper,paper_id)
         if not paper:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="paper not found")
-        if paper and paper.status == 0 and (current_user.id in paper.users or current_user.adm):
+        if paper:
             if paper_update.title:
                 paper.title =  paper_update.title
             if paper_update.content:
@@ -354,7 +345,6 @@ async def read_my_paper(paper_id:int,current_user: User = Depends(get_current_us
         if not paper:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return paper
-
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
 
 @app.patch("/users/papers/{paper_id}")
@@ -373,9 +363,10 @@ async def update_paper_draft(paper_id: int,paper_update: PaperUpdate,current_use
                 paper.content = paper_update.content
             if paper_update.theme:
                 paper.theme = paper_update.theme
+            if paper_update.added_users:
+                paper.users = paper.users + paper_update.added_users
             s.commit()
-        return {"status":"updated","detail":paper}
-
+            return {"status":"updated","detail":paper}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to do that")
   
 

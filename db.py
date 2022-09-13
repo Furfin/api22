@@ -70,4 +70,7 @@ def get_rating(session,id):
         for note in session.query(Rating).filter(Rating.paper_id == id):
             rate += note.value
             num += 1
-        return rate / num
+        if num != 0:
+            return rate / num
+        else:
+            return 0

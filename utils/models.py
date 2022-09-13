@@ -1,4 +1,4 @@
-from typing import Union,List,Optional
+from typing import Union,List
 from pydantic import BaseModel
 from sqlalchemy import Integer
 
@@ -24,6 +24,7 @@ class PaperUpdate(BaseModel):
     content: Union[str,None] = None
     added_users: List[int] = None
     theme: Union[str,None] = None
+    status: Union[int,None] = None
 
 class UserUpdate(BaseModel):
     active: Union[bool,None] = None
@@ -31,6 +32,7 @@ class UserUpdate(BaseModel):
     write: Union[bool,None] = None
     mod: Union[bool,None] = None
     adm: Union[bool,None] = None
+    
     
 class RatePaper(BaseModel):
     value: int
