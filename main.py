@@ -59,14 +59,17 @@ def proceed_url_token(request: Request,acces_token: str  = ""):
         username = data["login"]
         user = s.query(User).filter(User.username == username).first()
         if not user:
-            data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),json = {"username":username,"password":str(data["id"])}).json()
+            data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('user_registration'),
+                                 json = {"username":username,"password":str(data["id"])}).json()
             return data
         else:
-            data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),data = {"username":username,"password":str(data["id"])}).json()
+            data = requests.post("https://apapers.herokuapp.com" + app.url_path_for('login_for_acces_token'),
+                                 data = {"username":username,"password":str(data["id"])}).json()
             return data
 
 @app.get("/papers/")
-async def read_papers(current_user: User = Depends(get_current_user),sortby: str = '',author: str = '',words: str = '',theme: str = '',digestit:bool = True):
+async def read_papers(current_user: User = Depends(get_current_user),
+                      sortby: str = '',author: str = '',words: str = '',theme: str = '',digestit:bool = True):
     if current_user.read or current_user.adm:
         data = []
         for paper in s.query(Paper):
@@ -182,8 +185,6 @@ async def rate_paper(paper_id:int,cmt_str:CommentPaper,current_user: User = Depe
         s.commit()
         return {"status":"ok"}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not allowed to read that")
-
-
      
 @app.post("/register")
 async def user_registration(user: UserRegister):
@@ -237,9 +238,7 @@ async def update_users(user_id: int,user_update: UserUpdate,current_user: User =
         user = s.get(User,user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="user not found")
-        
-        if data.active != None:
-            user.active = data.active
+        user.active = data.active
         if data.read != None:
             user.read = data.read
         if data.write != None:
