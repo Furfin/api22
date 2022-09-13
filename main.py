@@ -75,11 +75,11 @@ async def read_papers(current_user: User = Depends(get_current_user),
         for paper in s.query(Paper):
             line = [paper]
             if sortby == "rate":
-                line = [paper,get_rating(s,paper.id)]
+                line = paper
             if sortby == "views":
-                line = [paper,paper.views]
+                line = paper
             if sortby == "title":
-                line = [paper,paper.title]
+                line = paper
             if sortby == "content":
                 line = paper
             if sortby == "words":
@@ -109,10 +109,12 @@ async def read_papers(current_user: User = Depends(get_current_user),
                     line = [paper] 
             if line != []: 
                 data.append(line)
-        if sortby in ["rate","views"]:
-            data = sorted(data,key = lambda data: data[1])[::-1]
+        if sortby in ["rate"]:
+            data = sorted(data,key = lambda paper: get_rating(s,paper.id))
+        if sortby in ["views"]:
+            data = sorted(data,key = lambda paper: paper.views)
         if sortby in ["title"]:
-            data = sorted(data,key = lambda data: data[1])
+            data = sorted(data,key = lambda paper: paper.title)
         if sortby in ["content"]:
             data = sorted(data,key = lambda paper: paper.content)
         if sortby in ["date"]:
@@ -120,9 +122,7 @@ async def read_papers(current_user: User = Depends(get_current_user),
         digest = []
         if digestit:
             for paper in data:
-                if sortby in ["rate","views","title"] and paper[0].status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
-                    digest.append(paper)
-                elif paper.status == 3 and check_if_less_than_seven_days(paper.datePublushed):
+                if paper.status == 3 and check_if_less_than_seven_days(paper.datePublushed):
                     digest.append(paper)
             data = digest
         return data
