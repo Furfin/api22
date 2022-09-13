@@ -120,8 +120,9 @@ async def read_papers(current_user: User = Depends(get_current_user),
         digest = []
         if digestit:
             for paper in data:
-                print(paper)
-                if paper[0].status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
+                if sortby in ["rate","views","title"] and paper[0].status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
+                    digest.append(paper)
+                elif paper.status == 3 and check_if_less_than_seven_days(paper.datePublushed):
                     digest.append(paper)
             data = digest
         return data
