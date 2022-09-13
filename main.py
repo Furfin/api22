@@ -120,7 +120,9 @@ async def read_papers(current_user: User = Depends(get_current_user),
         digest = []
         if digestit:
             for paper in data:
-                if paper[0].status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
+                if sortby in ["rate","views","title"] and paper[0].status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
+                    digest.append(paper)
+                elif paper.status == 3 and check_if_less_than_seven_days(paper[0].datePublushed):
                     digest.append(paper)
             data = digest
         return data
@@ -238,7 +240,6 @@ async def update_users(user_id: int,user_update: UserUpdate,current_user: User =
         user = s.get(User,user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="user not found")
-        
         if data.active != None:
             user.active = data.active
         if data.read != None:
